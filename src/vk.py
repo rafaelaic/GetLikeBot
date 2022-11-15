@@ -10,36 +10,50 @@ from selenium.webdriver.support.ui import WebDriverWait
 from time import sleep
 from random import randint
 
-TIME_WAIT = 10
+TIME_WAIT = 15
 
 '''EXCEÇÕES'''
-class VkErrorLoginException(Exception): pass
+
+
+class VkErrorLoginException(Exception):
+    pass
+
+
+class VkErrorDoingTask(Exception):
+    pass
+
+
+class VkErrorInvalidTaskType(Exception):
+    pass
+
 
 class Vk:
-    def __init__(self, driver:uc.Chrome):
+    def __init__(self, driver: uc.Chrome):
         self.driver = driver
         self.login_status = False
 
     def check_login(self):
         self.driver.get('https://vk.com/feed')
         sleep(3)
-        if self.driver.current_url == 'https://vk.com/feed': 
+        if self.driver.current_url == 'https://vk.com/feed':
             return True
         else:
             sleep(5)
             if self.driver.current_url == 'https://vk.com/feed':
                 return True
-            else: return False
+            else:
+                return False
 
-    def credencial_login(self, email:str, password:str):
-        
-        if self.check_login(): return
-        
+    def credencial_login(self, email: str, password: str):
+
+        if self.check_login():
+            return
+
         '''Login in Vk using email and pass'''
         self.driver.get('https://vk.com')
         sleep(3)
-        
-        #Click in Login Button
+
+        # Click in Login Button
         login_button = WebDriverWait(self.driver, TIME_WAIT).until(EC.element_to_be_clickable((
             By.CSS_SELECTOR, 'button[type="submit"]'
         ))).click()
@@ -63,11 +77,72 @@ class Vk:
 
         sleep(5)
 
-        if self.check_login(): return
-        else: raise VkErrorLoginException('Erro ao logar no Vk')
+        if self.check_login():
+            return
+        else:
+            raise VkErrorLoginException('Erro ao logar no Vk')
 
-    def execute_task(self, type):
-        pass
-    
+    def follow_page(self):
+        try:
+            # Click to follow
+            WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_element_located((
+                By.CSS_SELECTOR, 'button[id="public_subscribe"]'
+            ))).click()
+
+            # Check if following
+            text = WebDriverWait(self.driver, TIME_WAIT).until  (EC.visibility_of_all_elements_located((
+            By.CSS_SELECTOR, 'button[id="page_actions_btn"]'
+            )))[0].text
+
+            if (text == 'Following'):
+                return
+        except:
+            raise VkErrorDoingTask()
+
+    def join_group(self):
+        try:
+            # Click to follow
+            WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_element_located((
+                By.CSS_SELECTOR, 'button[id="join_button"]'
+            ))).click()
+
+            # Check if following
+            text = WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_all_elements_located((
+                By.CSS_SELECTOR, 'span[class="FlatButton__content"]'
+            )))[0].text
+
+            if (text == "You're a member"):
+                return
+        except:
+            raise VkErrorDoingTask()
+
+    def like_post(self):
+        try:
+            # Click to follow
+            WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_element_located((
+                By.CLASS_NAME, 'PostBottomActionContainer.PostButtonReactionsContainer'
+            ))).click()
+
+            # Check if following
+            text = WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_all_elements_located((
+                By.CLASS_NAME, 'PostBottomAction.PostBottomAction--withBg.PostButtonReactions.PostButtonReactions--post.PostButtonReactions--icon-active.PostButtonReactions--active'
+            )))[0].get_attribute('aria-label')
+
+            if (text == "Remove Like"):
+                return
+        except:
+            raise VkErrorDoingTask()
+
+    def execute_task(self, type: str):
+        if type == 'Follow page':
+            self.follow_page()
+        elif type == 'Join group':
+            self.join_group()
+        elif type == 'Liking post':
+            self.like_post()
+        else:
+            raise VkErrorInvalidTaskType('')
+
+
 if __name__ == '__main__':
     pass

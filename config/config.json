@@ -15,7 +15,8 @@
     ],
     "allowed_tasks": [
         "follow",
-        "like"
+        "like",
+        "join"
     ],
     "time_between_tasks": 4, 
     "time_between_profiles": 1000

@@ -41,7 +41,7 @@ class GetLike:
     def __init__(self, driver: uc.Chrome):
         self.driver = driver
         self.login_status = False
-        self.current_profile
+        self.current_profile = self.get_current_profile()
 
     # Login methods
     def insert_cookies(self):
@@ -109,17 +109,18 @@ class GetLike:
         except:
             raise GetLikeErrorImportBalance('Erro ao importar saldo, brother')
 
-    def current_profile(self):
+    def get_current_profile(self):
         '''Get current profile'''
 
         self.driver.get('https://getlike.io/en/tasks/vkontakte/all/')
-        sleep(3)
+        sleep(2)
 
         # Make sure the current profile is what we want
         current_profile = WebDriverWait(self.driver, TIME_WAIT).until(EC.presence_of_element_located((
             By.CLASS_NAME, 'media-info-name.text-capitalize.text-overflow'
         )))
-        return current_profile.get_dom_attribute('title')
+        self.current_profile = current_profile.get_dom_attribute('title')
+        return self.current_profile
 
     def switch_profile(self, profile_link: str):
         '''Try to switch the profile to the profile with profile_link inside'''
@@ -127,7 +128,7 @@ class GetLike:
         self.driver.get('https://getlike.io/en/tasks/vkontakte/all/')
         sleep(3)
 
-        if profile_link.split('.com/')[1] == self.current_profile():
+        if profile_link.split('.com/')[1] == self.get_current_profile():
             return
 
         # Click switch button
@@ -163,9 +164,8 @@ class GetLike:
             EC.alert_is_present()).accept()
 
         sleep(2)
-        current_profile = self.current_profile()
-        if profile_link.split('.com/')[1] == current_profile:
-            self.current_profile = current_profile
+        perfil_atual = self.get_current_profile()
+        if profile_link.split('.com/')[1] == perfil_atual:
             return
         else:
             raise GetLikeErrorSwitchProfile(
@@ -174,7 +174,7 @@ class GetLike:
     def found_tasks(self):
         '''Found and return the tasks in getlike current profile'''
 
-        self.driver.get("https://getlike.io/en/tasks/vkontakte/all/")
+        self.driver.get("https://getlike.io/en/tasks/vkontakte/like/")
         sleep(3)
 
         # Found all tasks in getlike profile
@@ -244,16 +244,16 @@ class GetLike:
     def check_task(self, task):
         # Wait for auto check
         try:
-            WebDriverWait(self.driver, 5).until(EC.visibility_of_element_located((
+            WebDriverWait(task, 5).until(EC.visibility_of_element_located((
                 By.CLASS_NAME, 'label.label-success.text-uppercase'
             )))
             return 'Success'
         except:
             try:
-                WebDriverWait(self.driver, 5).until(EC.visibility_of_element_located((
+                WebDriverWait(task, 5).until(EC.visibility_of_element_located((
                     By.CLASS_NAME, 'do.btn.btn-sm.btn-primary.btn-block.btn-success.check-task'
                 ))).click()
-                WebDriverWait(self.driver, 5).until(EC.visibility_of_element_located((
+                WebDriverWait(task, 5).until(EC.visibility_of_element_located((
                     By.CLASS_NAME, 'label.label-success.text-uppercase'
                 )))
                 return 'Success'
@@ -265,7 +265,7 @@ class GetLike:
         task_element = task['task']
 
         # Click task
-        WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_element_located((
+        WebDriverWait(task_element, TIME_WAIT).until(EC.visibility_of_element_located((
             By.CLASS_NAME, 'do.do-task.btn.btn-sm.btn-primary.btn-block'
         ))).click()
 
@@ -273,13 +273,18 @@ class GetLike:
 
         try:
             self.switch_to_vktab(parent_window)
-            sleep(10)
-            # vk.execute_task()
+            vk.execute_task(task['type'])
             self.switch_to_getlike(parent_window)
             status = self.check_task(task_element)
         except GetLikeTaskWithError:
             self.switch_to_getlike(parent_window)
             status = 'InvalidTask'
+        except VkErrorInvalidTaskType:
+            self.switch_to_getlike(parent_window)
+            status = 'InvalidTaskType'
+        except VkErrorDoingTask:
+            self.switch_to_getlike(parent_window)
+            raise VkErrorDoingTask
 
         self.switch_to_getlike(parent_window)
         
