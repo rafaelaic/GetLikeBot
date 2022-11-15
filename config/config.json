@@ -1,0 +1,22 @@
+{
+    "cookies_file": "./config/cookies.json",
+    "getlike_account": {
+        "id": "blackzarthur",
+        "email": "blackzarthur@gmail.com",
+        "senha": "#Money12"
+    },
+    "vk_accounts": [
+        {
+            "id": "Id759752686",
+            "link": "https://vk.com/id759752686",
+            "email": "blackzarthur@gmail.com",
+            "pass": "#Money12"
+        }
+    ],
+    "allowed_tasks": [
+        "follow",
+        "like"
+    ],
+    "time_between_tasks": 4, 
+    "time_between_profiles": 1000
+}
