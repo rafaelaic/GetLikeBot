@@ -6,6 +6,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from easy_webdriver import *
 
 from vk import *
 from tasks import ResultTask
@@ -40,8 +41,9 @@ TIME_WAIT = 10
 class GetLike:
     def __init__(self, driver: uc.Chrome):
         self.driver = driver
-        self.login_status = False
-        self.current_profile = self.get_current_profile()
+        self.login_status = self.check_login()
+        if self.login_status:
+            self.current_profile = self.get_current_profile()
 
     # Login methods
     def insert_cookies(self):
@@ -64,14 +66,14 @@ class GetLike:
             cookies_file.write(str(self.driver.get_cookies()))
 
     def check_login(self):
-        self.driver.get('https://getlike.io/')
+        self.driver.get('https://getlike.io/en/tasks/vkontakte/all/')
         sleep(2)
-        if len(self.driver.get_cookies()) == 0:
-            self.login_status = False
-            return False
-        else:
+        if self.driver.current_url == 'https://getlike.io/en/tasks/vkontakte/all/':
             self.login_status = True
             return True
+        else:
+            self.login_status = False
+            return False
 
     def credential_login(self, email: str, password: str):
         '''Login with email and password'''
@@ -174,7 +176,7 @@ class GetLike:
     def found_tasks(self):
         '''Found and return the tasks in getlike current profile'''
 
-        self.driver.get("https://getlike.io/en/tasks/vkontakte/like/")
+        self.driver.get("https://getlike.io/en/tasks/vkontakte/all/")
         sleep(3)
 
         # Found all tasks in getlike profile
@@ -226,7 +228,7 @@ class GetLike:
                 self.driver.close()
                 self.driver.switch_to.window(parent_window)
 
-    def hide_task(self, task):
+    def hide_task(self, task) ->ResultTask:
 
         try:
             # Clica nos tres pontos
@@ -238,6 +240,9 @@ class GetLike:
             WebDriverWait(task['task'], 5).until(EC.visibility_of_all_elements_located((
                 By.CSS_SELECTOR, f'a[href="javascript:;"]'
                 )))[3].click()
+            
+            result = ResultTask(task['id'], 'Hided', task['value'], task['type'], self.current_profile)
+            return result
         except:
             raise GetLikeErrorHideTask('Erro ao esconder a tarefa')
 

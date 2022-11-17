@@ -9,6 +9,7 @@ class GenLog:
     def log_task(self, task: ResultTask):
         message = f'{task.status} | {task.id} | {task.task_type} | {task.value} | {task.profile_name}' + '\n'
         
+        print(message)
         with open(self.tasks_log_path, 'a') as log:
             log.write(message)
             

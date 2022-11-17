@@ -6,6 +6,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from easy_webdriver import *
 
 from time import sleep
 from random import randint
@@ -85,9 +86,10 @@ class Vk:
     def follow_page(self):
         try:
             # Click to follow
-            WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_element_located((
+            element = WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_element_located((
                 By.CSS_SELECTOR, 'button[id="public_subscribe"]'
-            ))).click()
+            )))
+            element.click()
 
             # Check if following
             text = WebDriverWait(self.driver, TIME_WAIT).until  (EC.visibility_of_all_elements_located((
@@ -102,9 +104,10 @@ class Vk:
     def join_group(self):
         try:
             # Click to follow
-            WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_element_located((
+            element = WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_element_located((
                 By.CSS_SELECTOR, 'button[id="join_button"]'
-            ))).click()
+            )))
+            element.click()
 
             # Check if following
             text = WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_all_elements_located((
@@ -119,9 +122,11 @@ class Vk:
     def like_post(self):
         try:
             # Click to follow
-            WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_element_located((
-                By.CLASS_NAME, 'PostBottomActionContainer.PostButtonReactionsContainer'
-            ))).click()
+            element = WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_element_located((
+                By.CLASS_NAME, 'PostBottomAction.PostBottomAction--withBg.PostButtonReactions.PostButtonReactions--post'
+            )))
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
+            element.click()
 
             # Check if following
             text = WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_all_elements_located((
@@ -143,6 +148,7 @@ class Vk:
         else:
             raise VkErrorInvalidTaskType('')
 
+        sleep(1)
 
 if __name__ == '__main__':
     pass
