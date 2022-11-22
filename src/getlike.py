@@ -1,15 +1,14 @@
 '''IMPORTS'''
-import selenium
 import undetected_chromedriver as uc
-from selenium.webdriver.chrome.service import Service
+from selenium.common.exceptions import *
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from easy_webdriver import *
 
+
 from vk import *
-from tasks import ResultTask
 from time import sleep
 from random import randint
 
@@ -37,6 +36,25 @@ class GetLikeErrorHideTask(Exception):pass
 '''CONSTS'''
 TIME_WAIT = 10
 
+'''CLASSES'''
+
+
+class ResultTask:
+    def __init__(self, id:str, status:str, value:float, task_type:str, profile_name:str) -> None:
+        self.id = id
+        self.status = status
+        self.value = value
+        self.task_type = task_type
+        self.profile_name = profile_name
+
+class ResultProfile:
+    def __init__(self, id :str, earned:float, success_tasks:int, hided_tasks:int) -> None:
+        self.id = id
+        self.earned = earned
+        self.success_tasks = success_tasks
+        self.hided_tasks = hided_tasks
+
+
 
 class GetLike:
     def __init__(self, driver: uc.Chrome):
@@ -46,23 +64,23 @@ class GetLike:
             self.current_profile = self.get_current_profile()
 
     # Login methods
-    def insert_cookies(self):
+    def insert_cookies(self, cookies_path):
         '''Insert cookies in the driver'''
         self.driver.get('https://getlike.io/')
         sleep(3)
 
-        with open('../config/cookies.txt', 'r') as cookies_file:
+        with open(cookies_path, 'r') as cookies_file:
             cookies_list = eval(str(cookies_file.read()))
 
         for cookie in cookies_list:
             self.driver.add_cookie(cookie)
 
-    def export_cookies(self):
+    def export_cookies(self, cookies_path):
         '''Export cookies to the file'''
         self.driver.get('https://getlike.io/')
         sleep(3)
 
-        with open(f'../config/cookies.txt', 'w') as cookies_file:
+        with open(cookies_path, 'w') as cookies_file:
             cookies_file.write(str(self.driver.get_cookies()))
 
     def check_login(self):
@@ -80,22 +98,20 @@ class GetLike:
         self.driver.get('https://getlike.io/login/')
         sleep(3)
 
-        send_email = WebDriverWait(self.driver, TIME_WAIT).until(EC.element_to_be_clickable((
-            By.ID, 'User_loginLogin'))).send_keys(email)
+        #Send email
+        find_element(self.driver, 'id', 'User_loginLogin', 'clickable', TIME_WAIT).send_keys(email)
         sleep(2)
 
-        send_password = WebDriverWait(self.driver, TIME_WAIT).until(EC.element_to_be_clickable((
-            By.ID, 'User_passwordLogin'
-        ))).send_keys(password)
+        #Send password
+        find_element(self.driver, 'id', 'User_passwordLogin', 'clickable', TIME_WAIT).send_keys(password)
         sleep(2)
 
         for i in range(1, 5):
             print('WARNING -> RECAPTCHA')
             sleep(5)
 
-        login_button = WebDriverWait(self.driver, TIME_WAIT).until(EC.element_to_be_clickable((
-            By.CSS_SELECTOR, 'input[class="btn btn-primary btn-block btn-lg"]'
-        ))).click()
+        #Click in login
+        find_element(self.driver, 'css', 'input[class="btn btn-primary btn-block btn-lg"]', 'clickable', TIME_WAIT).click()
         sleep(4)
 
         if (self.check_login() == False):
@@ -105,8 +121,7 @@ class GetLike:
     def import_balance(self):
         self.driver.get('https://getlike.io/en/tasks/')
         try:
-            saldo = WebDriverWait(self.driver, TIME_WAIT).until(EC.presence_of_element_located((
-                By.ID, 'user_money_balance'))).text
+            saldo = find_element(self.driver, 'id', 'user_money_balance', 'presence').text
             return float(saldo)
         except:
             raise GetLikeErrorImportBalance('Erro ao importar saldo, brother')
@@ -118,9 +133,7 @@ class GetLike:
         sleep(2)
 
         # Make sure the current profile is what we want
-        current_profile = WebDriverWait(self.driver, TIME_WAIT).until(EC.presence_of_element_located((
-            By.CLASS_NAME, 'media-info-name.text-capitalize.text-overflow'
-        )))
+        current_profile = find_element(self.driver, 'class', 'media-info-name.text-capitalize.text-overflow', 'presence')
         self.current_profile = current_profile.get_dom_attribute('title')
         return self.current_profile
 
@@ -135,13 +148,11 @@ class GetLike:
 
         # Click switch button
         try:
-            switch_button = WebDriverWait(self.driver, TIME_WAIT).until(EC.element_to_be_clickable((
-                By.CLASS_NAME, 'media-info-type.text-inverse.text-overflow'
-            ))).click()
+            #Click in switch
+            find_element(self.driver, 'class', 'media-info-type.text-inverse.text-overflow').click()
         except:
-            switch_button = WebDriverWait(self.driver, TIME_WAIT).until(EC.element_to_be_clickable((
-                By.CLASS_NAME, 'link.media-middle.media-right.text-right'
-            ))).click()
+            #Try to click again
+            find_element(self.driver, 'class', 'link.media-middle.media-right.text-right').click()
 
         sleep(2)
 
@@ -180,7 +191,7 @@ class GetLike:
         sleep(3)
 
         # Found all tasks in getlike profile
-        tasks = WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_all_elements_located((
+        tasks = WebDriverWait(self.driver, TIME_WAIT).until(EC.presence_of_all_elements_located((
             By.CLASS_NAME, 'panel-group.task_item'
         )))
 
@@ -190,7 +201,7 @@ class GetLike:
             tasks_info.append({'task': task, 
                                'id': task.get_attribute('id').split('-')[2], 
                                'type': task.text.split('\n')[0], 
-                               'value': task.text.split('\n')[1]})
+                               'value': float(task.text.split('\n')[1])})
 
         return tasks_info
 
@@ -232,12 +243,12 @@ class GetLike:
 
         try:
             # Clica nos tres pontos
-            WebDriverWait(task['task'], 5).until(EC.visibility_of_element_located((
+            WebDriverWait(task['task'], 5).until(EC.presence_of_element_located((
                 By.CSS_SELECTOR, 'button[class="btn btn-muted-light btn-link_bg btn-sm dropdown-toggle dropdown-toggle_no-caret"]'
             ))).click()
 
             # Clica em hide
-            WebDriverWait(task['task'], 5).until(EC.visibility_of_all_elements_located((
+            WebDriverWait(task['task'], 5).until(EC.presence_of_all_elements_located((
                 By.CSS_SELECTOR, f'a[href="javascript:;"]'
                 )))[3].click()
             
@@ -249,16 +260,16 @@ class GetLike:
     def check_task(self, task):
         # Wait for auto check
         try:
-            WebDriverWait(task, 5).until(EC.visibility_of_element_located((
+            WebDriverWait(task, 5).until(EC.presence_of_element_located((
                 By.CLASS_NAME, 'label.label-success.text-uppercase'
             )))
             return 'Success'
         except:
             try:
-                WebDriverWait(task, 5).until(EC.visibility_of_element_located((
+                WebDriverWait(task, 5).until(EC.presence_of_element_located((
                     By.CLASS_NAME, 'do.btn.btn-sm.btn-primary.btn-block.btn-success.check-task'
                 ))).click()
-                WebDriverWait(task, 5).until(EC.visibility_of_element_located((
+                WebDriverWait(task, 5).until(EC.presence_of_element_located((
                     By.CLASS_NAME, 'label.label-success.text-uppercase'
                 )))
                 return 'Success'
@@ -270,7 +281,7 @@ class GetLike:
         task_element = task['task']
 
         # Click task
-        WebDriverWait(task_element, TIME_WAIT).until(EC.visibility_of_element_located((
+        WebDriverWait(task_element, TIME_WAIT).until(EC.presence_of_element_located((
             By.CLASS_NAME, 'do.do-task.btn.btn-sm.btn-primary.btn-block'
         ))).click()
 
@@ -279,6 +290,7 @@ class GetLike:
         try:
             self.switch_to_vktab(parent_window)
             vk.execute_task(task['type'])
+            sleep(2)
             self.switch_to_getlike(parent_window)
             status = self.check_task(task_element)
         except GetLikeTaskWithError:
@@ -290,12 +302,16 @@ class GetLike:
         except VkErrorDoingTask:
             self.switch_to_getlike(parent_window)
             raise VkErrorDoingTask
-
+        except NoSuchWindowException:
+            return ResultTask(task['id'], 'Stopped', task['value'], task['type'], self.current_profile)
+            
         self.switch_to_getlike(parent_window)
         
         result = ResultTask(task['id'], status, task['value'], task['type'], self.current_profile)
         return result
         
+
+
 
 
 if __name__ == '__main__':

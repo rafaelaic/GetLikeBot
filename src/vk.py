@@ -1,5 +1,4 @@
 '''IMPORTS'''
-import selenium
 import undetected_chromedriver as uc
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -27,11 +26,14 @@ class VkErrorDoingTask(Exception):
 class VkErrorInvalidTaskType(Exception):
     pass
 
+class VkErrorCheckTask(Exception):
+    pass
+
 
 class Vk:
     def __init__(self, driver: uc.Chrome):
         self.driver = driver
-        self.login_status = False
+        self.login_status = self.check_login()
 
     def check_login(self):
         self.driver.get('https://vk.com/feed')
@@ -83,42 +85,115 @@ class Vk:
         else:
             raise VkErrorLoginException('Erro ao logar no Vk')
 
+    #Follow user
+    def check_following_user(self, follow_button):
+        try:
+            if follow_button.text in ['Following', 'Request sent', 'Message']: return True
+            else: return False
+        except:
+            raise VkErrorCheckTask('Invalid Follow Button')
+        
+    def follow_user(self):
+        try:
+            #Get follow button
+            follow_button = find_element(self.driver, 'class', 'ProfileHeaderButton', 'presence')
+            
+            #Return if already following
+            if(self.check_following_user(follow_button)): return
+            
+            #Click to follow
+            follow_button.click()
+            
+            #Get follow button
+            '''follow_button = find_element(self.driver, 'class', 'ProfileHeaderButton', 'presence')
+            
+            #Return if following
+            if(self.check_following_user(follow_button)): return
+            else: raise VkErrorCheckTask("Error check task Vk")'''
+        except:
+            raise VkErrorDoingTask()
+
+
+    #Follow page
+    def check_following_page(self, follow_button):
+        try:
+            if follow_button.text in ['Following', 'Request sent', 'Message']: return True
+            else: return False
+        except:
+            raise VkErrorCheckTask('Invalid Follow Button')
+    
     def follow_page(self):
         try:
-            # Click to follow
-            element = WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_element_located((
-                By.CSS_SELECTOR, 'button[id="public_subscribe"]'
-            )))
+            for element in find_elements(self.driver, 'class', 'FlatButton__in', 'presence'):
+            #Click on follow
+                if element.text == 'Follow': break
+
+            if element.text != 'Follow': raise VkErrorDoingTask('Follow button not found')
+            
+            #Check if following
+            if(self.check_following_page(element)): return
+            
+            #Click on follow
             element.click()
-
-            # Check if following
-            text = WebDriverWait(self.driver, TIME_WAIT).until  (EC.visibility_of_all_elements_located((
-            By.CSS_SELECTOR, 'button[id="page_actions_btn"]'
-            )))[0].text
-
-            if (text == 'Following'):
-                return
+            
+            ''' #Check if following
+            for element in find_elements(self.driver, 'class', 'FlatButton__in', 'presence'):
+                if(self.check_following_page(element)): return
+            raise VkErrorCheckTask("Error check task Vk")'''
         except:
             raise VkErrorDoingTask()
 
+
+    #Join group
+    def check_following_group(self, follow_button):
+        try:
+            if follow_button.text in ["You're a member", "Following", "Message"]: return True
+            else: return False
+        except:
+            raise VkErrorCheckTask('Invalid Follow Button')
+    
     def join_group(self):
         try:
-            # Click to follow
-            element = WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_element_located((
-                By.CSS_SELECTOR, 'button[id="join_button"]'
-            )))
+            for element in find_elements(self.driver, 'class', 'FlatButton__in', 'presence'):
+            #Find element
+                if element.text in ['Follow', 'Join community']: break
+
+            if element.text not in ['Follow', 'Join community']: raise VkErrorDoingTask('Follow button not found')
+            
+            #Check if following
+            if(self.check_following_group(element)):return
+            
+            #Click on join
             element.click()
-
-            # Check if following
-            text = WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_all_elements_located((
-                By.CSS_SELECTOR, 'span[class="FlatButton__content"]'
-            )))[0].text
-
-            if (text == "You're a member"):
-                return
+            
+            '''#Check if following
+            for element in find_elements(self.driver, 'class', 'FlatButton__in', 'presence'):
+                if self.check_following_group(element): return
+            raise VkErrorCheckTask("Error check task Vk")'''
         except:
-            raise VkErrorDoingTask()
+            raise VkErrorDoingTask('Error join group')
 
+    #Like photo
+    def like_photo(self):
+        try:
+            try:
+                #Check if following
+                find_element(self.driver, 'class', 'like_btn like _like animate active', 'presence')
+                return
+            except:
+                pass
+            
+            #Click on follow
+            find_element(self.driver, 'class', 'like_btn like _like', 'presence').click()
+
+            #Check if following
+            find_element(self.driver, 'class', 'like_btn like _like animate active', 'presence')
+        except:
+            raise VkErrorDoingTask('Error liking photo')
+        
+        
+
+#NOT WORKING YET
     def like_post(self):
         try:
             # Click to follow
@@ -141,10 +216,14 @@ class Vk:
     def execute_task(self, type: str):
         if type == 'Follow page':
             self.follow_page()
+        elif type == 'Follow user':
+            self.follow_user()
         elif type == 'Join group':
             self.join_group()
         elif type == 'Liking post':
             self.like_post()
+        elif type == 'Liking photo':
+            self.like_photo()
         else:
             raise VkErrorInvalidTaskType('')
 

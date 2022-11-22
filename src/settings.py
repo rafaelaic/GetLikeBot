@@ -4,7 +4,7 @@ import json
 
 class Settings:
     def __init__(self, config_path :str) -> None:
-        with open('../config/config.json') as config_file:
+        with open(config_path) as config_file:
             settings = json.load(config_file)
         self.getlike_account = settings['getlike_account']
         self.vk_accounts = settings['vk_accounts']
