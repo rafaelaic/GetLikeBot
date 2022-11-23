@@ -3,7 +3,7 @@
     "getlike_account": {
         "id": "blackzarthur",
         "email": "blackzarthur@gmail.com",
-        "senha": "#Money12"
+        "pass": "#Money12"
     },
     "vk_accounts": [
         {
@@ -11,13 +11,21 @@
             "link": "https://vk.com/id759752686",
             "email": "blackzarthur@gmail.com",
             "pass": "#Money12"
+        },
+        {
+
+            "id": "Kaio_medeiros",
+            "link": "https://vk.com/kaio_medeiros",
+            "email": "5511912876675",
+            "pass": "#Money12"
         }
     ],
     "allowed_tasks": [
         "Follow page",
         "Follow user",
         "Join group",
-        "Liking photo"
+        "Liking photo",
+        "Liking post"
     ],
     "time_between_tasks": 4, 
     "time_between_profiles": 1000

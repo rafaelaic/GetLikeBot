@@ -10,6 +10,9 @@ from gen_log import GenLog
 from settings import Settings
 from getlike import *
 
+class ErrorMakeReady(Exception):pass
+
+
 import os
 
 def inicia_chromedriver(headless = False, user_data_dir = None) -> uc.Chrome: 
@@ -35,43 +38,58 @@ class RPBot:
         driver = uc.Chrome(user_data_dir=user_data_dir, options=options)
         return driver
     
-    def rape_profile(self, profile:dict):
+    def make_ready(self, getlike:GetLike, vk:Vk, profile:dict):
+        if getlike.login_status and vk.login_status: return
+        else:
+            if vk.login_status == False:
+                vk.credencial_login(profile['email'], profile['pass'])
+            if getlike.login_status == False:
+                getlike.insert_cookies(self.root_path + '/config/cookies.txt')
+                if getlike.check_login() == False:
+                    getlike.credential_login(self.settings.getlike_account['email'], self.settings.getlike_account['pass'])
+                    getlike.export_cookies(self.root_path + '/config/cookies.txt')
+            
+        if getlike.login_status and vk.login_status: return
+        else: raise ErrorMakeReady('Erro ao logar no getlike e/ou vk')
+            
+    def rape_profile(self, profile:dict): 
         success_tasks = 0
         hided_tasks = 0
         earned = 0
         
-        driver = self.__inicia_driver__(user_data_dir=(self.root_path + '/profiles/' + profile['id'].lower()))
+        driver = self.__inicia_driver__(headless = True, user_data_dir=(self.root_path + '/profiles/' + profile['id'].lower()))
         getlike = GetLike(driver)
         vk = Vk(driver)
         
-        if getlike.login_status and vk.login_status: pass
-        else:
-            getlike.insert_cookies(self.root_path + '/config/cookies.txt')
-            vk.credencial_login(profile['email'], profile['pass'])
+        self.make_ready(getlike, vk, profile)
             
-        getlike.switch_profile(profile['link'])
+        getlike.switch_profile(profile['id'])
         
-        while True:
-            try:
-                tasks = getlike.found_tasks()
-            except:
-                break
-            
-            for task in tasks:
-                if(task['type'] in self.settings.allowed_tasks):
-                    result = getlike.execute_task(task, vk)
-                    
-                    if result.status == 'Success': 
-                        success_tasks+=1
-                        earned+=result.value
+        try:
+            while True:
+                try:
+                    tasks = getlike.found_tasks()
+                except:
+                    break
+                
+                for task in tasks:
+                    if(task['type'] in self.settings.allowed_tasks):
+                        result = getlike.execute_task(task, vk)
+                        
+                        if result.status == 'Success': 
+                            success_tasks+=1
+                            earned+=result.value
+                        else:
+                            hided_tasks+=1
+                        
+                        self.log.log_task(result)
                     else:
+                        result = getlike.hide_task(task)
                         hided_tasks+=1
-                    
-                    self.log.log_task(result)
-                else:
-                    result = getlike.hide_task(task)
-                    hided_tasks+=1
-                    self.log.log_task(result)
+                        self.log.log_task(result)
+        except:
+            self.log.log_message('\nOcorreu um erro ao rapear esse perfil, passando pro próximo\n')
+            
                     
         profile_log = ResultProfile(profile['id'], earned, success_tasks, hided_tasks)
         self.log.log_profile(profile_log)

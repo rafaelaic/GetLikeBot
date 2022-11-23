@@ -81,9 +81,22 @@ class Vk:
         sleep(5)
 
         if self.check_login():
+            self.login_status = True
             return
         else:
             raise VkErrorLoginException('Erro ao logar no Vk')
+
+    def check_18box(self):
+        try:
+            pop_up = find_element(self.driver, 'class', 'popup_box_container', wait=1)
+            
+            #click on box
+            find_element(pop_up, 'class', 'checkbox group_age_checkbox').click()
+            
+            find_element(pop_up, 'class', 'FlatButton FlatButton--primary FlatButton--size-m').click()
+            sleep(2)
+        except:
+            pass
 
     #Follow user
     def check_following_user(self, follow_button):
@@ -175,10 +188,11 @@ class Vk:
 
     #Like photo
     def like_photo(self):
+
         try:
             try:
-                #Check if following
-                find_element(self.driver, 'class', 'like_btn like _like animate active', 'presence')
+                #Check if already following
+                find_element(self.driver, 'class', 'like_btn like _like active', 'presence')
                 return
             except:
                 pass
@@ -191,29 +205,24 @@ class Vk:
         except:
             raise VkErrorDoingTask('Error liking photo')
         
-        
-
-#NOT WORKING YET
+    #Like post
     def like_post(self):
         try:
-            # Click to follow
-            element = WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_element_located((
-                By.CLASS_NAME, 'PostBottomAction.PostBottomAction--withBg.PostButtonReactions.PostButtonReactions--post'
-            )))
-            self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
-            element.click()
+            #Get like button
+            like_button = find_element(self.driver, 'class', 'PostBottomActionContainer PostButtonReactionsContainer', 'presence')
 
-            # Check if following
-            text = WebDriverWait(self.driver, TIME_WAIT).until(EC.visibility_of_all_elements_located((
-                By.CLASS_NAME, 'PostBottomAction.PostBottomAction--withBg.PostButtonReactions.PostButtonReactions--post.PostButtonReactions--icon-active.PostButtonReactions--active'
-            )))[0].get_attribute('aria-label')
-
-            if (text == "Remove Like"):
-                return
+            #Scroll to button and click
+            self.driver.execute_script(f"window.scrollTo(0, {int(like_button.location['y']/2)})")
+            like_button.click()
+            
+            #Check if like
+            find_element(like_button, 'class', 'PostBottomAction PostBottomAction--withBg PostButtonReactions PostButtonReactions--post PostButtonReactions--icon-active PostButtonReactions--active', 'presence')
         except:
-            raise VkErrorDoingTask()
+            raise VkErrorDoingTask('Error liking post')
 
     def execute_task(self, type: str):
+        self.check_18box()
+        
         if type == 'Follow page':
             self.follow_page()
         elif type == 'Follow user':

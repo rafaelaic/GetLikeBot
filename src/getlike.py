@@ -6,6 +6,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from easy_webdriver import *
+from selenium.webdriver.remote.webelement import WebElement
 
 
 from vk import *
@@ -70,7 +71,11 @@ class GetLike:
         sleep(3)
 
         with open(cookies_path, 'r') as cookies_file:
-            cookies_list = eval(str(cookies_file.read()))
+            try:
+                cookies_list = eval(str(cookies_file.read()))
+            except:
+                print('Erro ao inserir cookies')
+                return
 
         for cookie in cookies_list:
             self.driver.add_cookie(cookie)
@@ -134,16 +139,18 @@ class GetLike:
 
         # Make sure the current profile is what we want
         current_profile = find_element(self.driver, 'class', 'media-info-name.text-capitalize.text-overflow', 'presence')
-        self.current_profile = current_profile.get_dom_attribute('title')
-        return self.current_profile
+        self.current_profile = current_profile.get_dom_attribute('title').lower()
+        return self.current_profile.lower()
 
-    def switch_profile(self, profile_link: str):
+    def switch_profile(self, profile_id: str):
         '''Try to switch the profile to the profile with profile_link inside'''
 
+        profile_id = profile_id.lower()
+        
         self.driver.get('https://getlike.io/en/tasks/vkontakte/all/')
         sleep(3)
 
-        if profile_link.split('.com/')[1] == self.get_current_profile():
+        if profile_id == self.get_current_profile():
             return
 
         # Click switch button
@@ -157,28 +164,26 @@ class GetLike:
         sleep(2)
 
         # Get profiles
-        profiles = WebDriverWait(self.driver, TIME_WAIT).until(EC.presence_of_all_elements_located((
-            By.CLASS_NAME, 'media-info-name.text-overflow.visible-xs'
-        )))
+        profiles = find_elements(self.driver, 'class', 'media media_table media_default media_padding-adp media_md js-app-user-social-block', 'presence')
 
-        # Find profile
-        for profile_element in profiles:
-            if profile_link == profile_element.get_dom_attribute('title').split()[0]:
+        #Click on switch
+        for profile in profiles:
+            profile_data = profile.text.split('\n')
+
+            if profile_id == profile_data[0].lower():
+                profile.click()
                 break
         else:
             raise GetLikeErrorSwitchProfile('Perfil não encontrado')
 
-        # Click on founded profile
-        click = WebDriverWait(self.driver, TIME_WAIT).until(
-            EC.element_to_be_clickable(profile_element)).click()
 
         # Agree the alert
         alert = WebDriverWait(self.driver, TIME_WAIT).until(
             EC.alert_is_present()).accept()
 
         sleep(2)
-        perfil_atual = self.get_current_profile()
-        if profile_link.split('.com/')[1] == perfil_atual:
+        self.current_profile = self.get_current_profile()
+        if self.current_profile == profile_id:
             return
         else:
             raise GetLikeErrorSwitchProfile(
@@ -239,25 +244,26 @@ class GetLike:
                 self.driver.close()
                 self.driver.switch_to.window(parent_window)
 
-    def hide_task(self, task) ->ResultTask:
-
-        try:
+    def hide_task(self, task :dict) ->ResultTask:
+        # Clica nos tres pontos
+        find_element(task['task'], 'css', 'button[data-toggle="dropdown"]').click()
+        
+        # Clica em hide
+        find_element(task['task'], 'css', 'a[class="delete"]').click()
+        result = ResultTask(task['id'], 'Hided', task['value'], task['type'], self.current_profile)
+        return result
+        '''        try:
             # Clica nos tres pontos
-            WebDriverWait(task['task'], 5).until(EC.presence_of_element_located((
-                By.CSS_SELECTOR, 'button[class="btn btn-muted-light btn-link_bg btn-sm dropdown-toggle dropdown-toggle_no-caret"]'
-            ))).click()
-
-            # Clica em hide
-            WebDriverWait(task['task'], 5).until(EC.presence_of_all_elements_located((
-                By.CSS_SELECTOR, f'a[href="javascript:;"]'
-                )))[3].click()
+            find_element(task['task'], 'css', 'button[data-toggle="dropdown"]').click()
             
+            # Clica em hide
+            find_element(task['task'], 'css', 'a[class="delete"]').click()
             result = ResultTask(task['id'], 'Hided', task['value'], task['type'], self.current_profile)
             return result
         except:
-            raise GetLikeErrorHideTask('Erro ao esconder a tarefa')
+            raise GetLikeErrorHideTask('Erro ao esconder a tarefa')'''
 
-    def check_task(self, task):
+    def check_task(self, task :WebElement):
         # Wait for auto check
         try:
             WebDriverWait(task, 5).until(EC.presence_of_element_located((
@@ -274,8 +280,7 @@ class GetLike:
                 )))
                 return 'Success'
             except:
-                self.hide_task(task)
-                return 'ErrorCheckTask'
+                raise GetLikeErrorCheckTask('Erro ao checar tarefa')
 
     def execute_task(self, task: dict, vk: Vk):
         task_element = task['task']
@@ -304,6 +309,8 @@ class GetLike:
             raise VkErrorDoingTask
         except NoSuchWindowException:
             return ResultTask(task['id'], 'Stopped', task['value'], task['type'], self.current_profile)
+        except GetLikeErrorCheckTask:
+            return self.hide_task(task)
             
         self.switch_to_getlike(parent_window)
         
