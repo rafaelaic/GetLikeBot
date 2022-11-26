@@ -38,11 +38,11 @@ class Vk:
     def check_login(self):
         self.driver.get('https://vk.com/feed')
         sleep(3)
-        if self.driver.current_url == 'https://vk.com/feed':
+        if self.driver.current_url == 'https://vk.com/feed' or self.driver.current_url == 'https://vk.com/al_feed.php':
             return True
         else:
             sleep(5)
-            if self.driver.current_url == 'https://vk.com/feed':
+            if self.driver.current_url == 'https://vk.com/feed'or self.driver.current_url == 'https://vk.com/al_feed.php':
                 return True
             else:
                 return False

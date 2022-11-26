@@ -57,7 +57,7 @@ class RPBot:
         hided_tasks = 0
         earned = 0
         
-        driver = self.__inicia_driver__(headless = True, user_data_dir=(self.root_path + '/profiles/' + profile['id'].lower()))
+        driver = self.__inicia_driver__(headless = False, user_data_dir=(self.root_path + '/profiles/' + profile['id'].lower()))
         getlike = GetLike(driver)
         vk = Vk(driver)
         
